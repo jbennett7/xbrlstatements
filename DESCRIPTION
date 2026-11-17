@@ -1,0 +1,29 @@
+Package: xbrlstatements
+Title: Build Financial Statements from SEC XBRL Filings
+Version: 1.0.1
+Authors@R: 
+    person("Joseph", "Bennett", , "jbennett@jbennettconsulting.com", role = c("aut", "cre"))
+Description: Builds income statements, balance sheets and cash flow
+     statements from SEC XBRL filings by walking presentation linkbase
+     trees and selecting consolidated and dimensional facts.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Imports:
+    dplyr,
+    tidyr,
+    purrr,
+    tibble,
+    XBRL (>= 1.1.0),
+    secfilings (>= 1.0.1),
+    stats,
+    utils
+Remotes:
+    jbennett7/XBRL,
+    jbennett7/secfilings
+Depends:
+    R (>= 4.1.0)
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
