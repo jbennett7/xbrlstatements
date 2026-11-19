@@ -99,8 +99,8 @@ test_that("consolidated_values instant contexts only with three end dates includ
     s    <- flatten_tree(tree)
     cv  <- consolidated_values(xbrl, unique(s$elementId), "instant")
     expect_true(all(is.na(cv$startDate)))
-    expect_equal(length(unique(cv$endDate)), 3)
-    expect_true("2024-12-31" %in% cv$endDate)
+    expect_setequal(unique(cv$endDate),
+                    c("2026-09-30", "2026-06-30", "2025-12-31", "2025-09-30", "2024-12-31"))
 })
 
 test_that("consolidated_values with a bad period input gives an error", {
@@ -377,4 +377,38 @@ test_that("format_statement shows a negative filed value on a negated line as po
     md$`2025-09-30`[md$elementId == "us-gaap_InterestExpense"] <- -45e6
     f <- format_statement(md, role_tree(make_xbrl(), ROLE_IS))
     expect_equal(f$`2025-09-30`[f$display_label == "Interest expense"], "45")
+})
+
+test_that("balance_values output is the right shape", {
+    bv <- balance_values_cf()
+    expect_named(bv, c("elementId", "preferredLabel", "2026-09-30", "2025-09-30"))
+    expect_equal(nrow(bv), 2)
+})
+
+test_that("balance_values output is the correct values", {
+    bv <- balance_values_cf()
+    end <- unlist(bv[bv$preferredLabel == LBL_END, c("2026-09-30", "2025-09-30")])
+    expect_equal(end, c(200e6, 180e6), ignore_attr = TRUE)
+})
+
+test_that("balance_values start row uses the instant before the YTD period", {
+    bv <- balance_values_cf()
+    start <- unlist(bv[bv$preferredLabel == LBL_START, c("2026-09-30", "2025-09-30")])
+    # Trap: using the Q3 start (2026-06-30) instead of the YTD start
+    # (2025-12-31) would give 180e6 in the 2026 column.
+    expect_equal(start, c(150e6, 120e6), ignore_attr = TRUE)
+})
+
+test_that("balance_values returns only instant elements", {
+    bv <- balance_values_cf()
+    expect_identical(unique(bv$elementId), "us-gaap_CashAndCashEquivalentsAtCarryingValue")
+})
+
+test_that("balance_values ensure a statement without instant rows is returned empty", {
+    xbrl <- make_xbrl()
+    s    <- flatten_tree(role_tree(xbrl, ROLE_IS))
+    v    <- consolidated_values(xbrl, unique(s$elementId), "3M")
+    bv   <- balance_values(xbrl, s, v, c("2026-09-30", "2025-09-30"))
+    expect_equal(nrow(bv), 0)
+    expect_named(bv, c("elementId", "preferredLabel", "2026-09-30", "2025-09-30"))
 })

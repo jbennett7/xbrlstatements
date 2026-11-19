@@ -18,4 +18,4 @@ utils::globalVariables(c("elementId", "fromElementId", "toElementId", "roleId",
                          "value", "dimension", "morder", "preferredLabel",
                          "substitutionGroup", "abstract", "structural",
                          "labelRole", "labelString", "precision",
-                         "display_label"))
+                         "display_label", "n", "lookup"))

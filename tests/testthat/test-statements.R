@@ -62,3 +62,47 @@ test_that("build_statement balance uses instant dates", {
 test_that("build_statement errors when the period has no facts", {
     expect_error(build_statement(make_xbrl(), "income", "10-K"), "No facts found")
 })
+
+test_that("build_statement has correct YTD period ends", {
+    bs <- build_statement(make_xbrl(), "cash_flow", "10-Q")
+    date_cols <- names(bs$data)[grepl("\\d{4}-\\d{2}-\\d{2}", names(bs$data))]
+    expect_equal(date_cols, c("2026-09-30", "2025-09-30"))
+})
+
+test_that("build_statement has correct shape", {
+    bs <- build_statement(make_xbrl(), "cash_flow", "10-Q")
+    expect_equal(nrow(bs$data), 5)
+    expect_equal(bs$data$label, c("Net Income (Loss)",
+                                  "Capital expenditures",
+                                  "Net change in cash",
+                                  "Cash at beginning of period",
+                                  "Cash at end of period"))
+})
+
+test_that("build_statement duration values", {
+    bs <- build_statement(make_xbrl(), "cash_flow", "10-Q")
+    expect_equal(as.numeric(bs$data[
+        bs$data$elementId == "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",
+        c("2026-09-30", "2025-09-30")]), c(50e6, 60e6))
+    expect_equal(as.numeric(bs$data[
+        bs$data$elementId == "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",
+        c("2026-09-30", "2025-09-30")]), c(1250e6, 1090e6))
+    expect_true(bs$data$negated[
+        bs$data$elementId == "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment"])
+})
+
+test_that("build_statement balance rows", {
+    bs    <- build_statement(make_xbrl(), "cash_flow", "10-Q")
+    cols  <- c("2026-09-30", "2025-09-30")
+    start <- bs$data[bs$data$label == "Cash at beginning of period", cols]
+    end   <- bs$data[bs$data$label == "Cash at end of period", cols]
+    expect_equal(as.numeric(start), c(150e6, 120e6))
+    expect_equal(as.numeric(end),   c(200e6, 180e6))
+})
+
+test_that("build_statement rows are formatted correctly", {
+    bs <- build_statement(make_xbrl(), "cash_flow", "10-Q")
+    f <- format_statement(bs$data, bs$tree)
+    expect_equal(f$`2026-09-30`[f$display_label == "Capital expenditures"], "(1,250)")
+    expect_equal(f$`2026-09-30`[f$display_label == "Cash at end of period"], "200")
+})

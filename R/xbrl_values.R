@@ -80,6 +80,44 @@ widen <- function(values, date_cols, id_cols = "elementId") {
         select(all_of(c(id_cols, date_cols)))
 }
 
+#' balance_values
+#'
+#' @details Start rows (periodStartLabel) take the instant the day before the
+#'     column's period starts; all other instant rows take the instant at the
+#'     column date.
+#' @param xbrl the data processed by xbrlDoAll
+#' @param statement the statement
+#' @param values the duration consolidated_values output for the statement period
+#' @param date_cols the date_cols
+#' @return a tibble with elementId, preferredLabel and one column per date
+balance_values <- function(xbrl, statement, values, date_cols) {
+    instant_ids <- xbrl$element$elementId[xbrl$element$periodType == "instant"]
+    instant_rows <- statement |>
+        dplyr::filter(elementId %in% instant_ids) |>
+        dplyr::distinct(elementId, preferredLabel)
+    if (nrow(instant_rows) == 0) {
+        empty <- tibble::tibble(elementId = character(), preferredLabel = character())
+        empty[date_cols] <- NA_real_
+        return(empty)
+    }
+    starts <- values |>
+        dplyr::filter(endDate %in% date_cols) |>
+        dplyr::count(endDate, startDate) |>
+        dplyr::group_by(endDate) |>
+        dplyr::slice_max(n, n = 1, with_ties = FALSE) |>
+        dplyr::ungroup() |>
+        dplyr::select(endDate, startDate)
+    cells <- tidyr::crossing(instant_rows, starts) |>
+        dplyr::mutate(lookup = dplyr::if_else(grepl("periodStartLabel", preferredLabel),
+                      as.character(as.Date(startDate) - 1),
+                      endDate))
+    inst_facts <- consolidated_values(xbrl, unique(instant_rows$elementId), "instant")
+    cells |>
+        dplyr::left_join(inst_facts |> dplyr::select(elementId, endDate, fact),
+                  by = c("elementId", "lookup" = "endDate")) |>
+        widen(date_cols, id_cols = c("elementId", "preferredLabel"))
+}
+
 #' get_member_rows
 #'
 #' @param xbrl the data processed by xbrlDoAll

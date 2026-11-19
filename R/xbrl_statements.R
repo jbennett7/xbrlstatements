@@ -63,6 +63,12 @@ build_statement <- function(xbrl, kind, form) {
     date_cols <- latest_dates(values)
     wide <- widen(values, date_cols)
     member_rows <- get_member_rows(xbrl, tree, statement, period, date_cols)
+    data <- merge_members(statement, wide, member_rows)
+    if (period != "instant") {
+        balances <- balance_values(xbrl, statement, values, date_cols)
+        data <- rows_update(data, balances, by = c("elementId", "preferredLabel"),
+                            unmatched = "ignore")
+    }
     list(kind = kind, period = period, tree = tree,
-         data = merge_members(statement, wide, member_rows))
+         data = data)
 }

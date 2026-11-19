@@ -298,8 +298,8 @@ fixture_facts <- function() {
         "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "c_ytd_2026",        "usd",           "50000000", "-6",
         "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "c_ytd_2025",        "usd",           "60000000", "-6",
         "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "c_q3_2025",         "usd",           "20000000", "-6",    # 3M: excluded from YTD
-        "us-gaap_CashAndCashEquivalentAtCarryingValue",          "c_i_2025_09_30",    "usd",           "180000000", "-6",
-        "us-gaap_CashAndCashEquivalentAtCarryingValue",          "c_i_2026_06_30",    "usd",           "180000000", "-6",   # Q3 start: not the YTD start
+        "us-gaap_CashAndCashEquivalentsAtCarryingValue",         "c_i_2025_09_30",    "usd",           "180000000", "-6",
+        "us-gaap_CashAndCashEquivalentsAtCarryingValue",         "c_i_2026_06_30",    "usd",           "180000000", "-6",   # Q3 start: not the YTD start
     )
 }
 
@@ -361,4 +361,11 @@ merge_members_is <- function() {
 
 format_statement_is <- function() {
     format_statement(merge_members_is(), role_tree(make_xbrl(), ROLE_IS))
+}
+
+balance_values_cf <- function() {
+    xbrl <- make_xbrl()
+    s    <- flatten_tree(role_tree(xbrl, ROLE_CF))
+    v    <- consolidated_values(xbrl, unique(s$elementId), "YTD")
+    balance_values(xbrl, s, v, c("2026-09-30", "2025-09-30"))
 }

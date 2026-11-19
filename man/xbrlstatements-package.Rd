@@ -6,7 +6,7 @@
 \alias{xbrlstatements-package}
 \title{xbrlstatements: Build Financial Statements from SEC XBRL Filings}
 \description{
-Parse XBRL for financial information.
+Builds income statements, balance sheets and cash flow statements from SEC XBRL filings by walking presentation linkbase trees and selecting consolidated and dimensional facts.
 }
 \author{
 \strong{Maintainer}: Joseph Bennett \email{jbennett@jbennettconsulting.com}
