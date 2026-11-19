@@ -70,14 +70,14 @@ test_that("consolidated_values no YTD facts in 3M", {
     expect_false(2.9e9 %in% cv3m$fact)  # Revenues YTD 2026
 })
 
-test_that("consolidated_values YTD has three rows, 2 Revenues and 1 NetIncome", {
+test_that("consolidated_values YTD has four rows, 2 Revenues and 2 NetIncome", {
     xbrl <- make_xbrl()
     tree <- role_tree(xbrl, ROLE_IS)
     s    <- flatten_tree(tree)
     cvytd <- consolidated_values(xbrl, unique(s$elementId), "YTD")
-    expect_equal(nrow(cvytd), 3)
+    expect_equal(nrow(cvytd), 4)
     expect_equal(nrow(cvytd[cvytd$elementId == "us-gaap_Revenues",]), 2)
-    expect_equal(nrow(cvytd[cvytd$elementId == "us-gaap_NetIncomeLoss",]), 1)
+    expect_equal(nrow(cvytd[cvytd$elementId == "us-gaap_NetIncomeLoss",]), 2)
 })
 
 test_that("consolidated_values resolves duplicates", {

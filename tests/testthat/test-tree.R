@@ -130,7 +130,7 @@ test_that("descendants recurses through every level below a node", {
 
 test_that("flatten_tree has the right shape", {
     s <- flatten_tree(role_tree(make_xbrl(), ROLE_IS))
-    expect_named(s, c("seq", "elementId", "depth", "negated", "label"))
+    expect_named(s, c("seq", "elementId", "depth", "negated", "label", "preferredLabel"))
 })
 
 test_that("flatten_tree drops the root", {
@@ -201,3 +201,9 @@ test_that("flatten_tree works for the balance sheet tree", {
     expect_true(all(s$depth[!endsWith(s$elementId, "Abstract")] == 2))
 })
 
+test_that("flatten_tree keeps the arc's preferredLabel", {
+    s <- flatten_tree(role_tree(make_xbrl(), ROLE_BS))
+    expect_type(s$preferredLabel, "character")
+    expect_identical(s$preferredLabel[s$elementId == "us-gaap_Assets"], LBL_TOT)
+    expect_true(is.na(s$preferredLabel[s$elementId == "us-gaap_AccountsReceivableNetCurrent"]))
+})

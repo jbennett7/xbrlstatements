@@ -29,6 +29,13 @@
 #   Equity                                   200          160
 #   Total liabilities and equity             500          400
 #
+# Cash flow statement (YTD, in $M)     2026-09-30   2025-09-30
+#   Net income                              1,300        1,150
+#   Capital expenditures (negatedLabel)    (1,250)      (1,090)
+#   Net change in cash (total)                 50           60
+#   Cash at beginning of period (periodStartLabel)  150   120
+#   Cash at end of period (periodEndLabel)          200   180
+#
 # Traps built in:
 #   - YTD facts (and a YTD member fact) that must not appear in a 3M statement
 #   - a two-dimension context on Revenues that must be ignored
@@ -38,12 +45,15 @@
 
 ROLE_IS <- "http://acme.com/role/IncomeStatement"
 ROLE_BS <- "http://acme.com/role/BalanceSheet"
+ROLE_CF <- "http://acme.com/role/CashFlows"
 
 LBL      <- "http://www.xbrl.org/2003/role/label"
 LBL_TERS <- "http://www.xbrl.org/2003/role/terseLabel"
 LBL_TOT  <- "http://www.xbrl.org/2003/role/totalLabel"
 LBL_VERB <- "http://www.xbrl.org/2003/role/verboseLabel"
 LBL_NEG  <- "http://www.xbrl.org/2009/role/negatedLabel"
+LBL_START <- "http://www.xbrl.org/2003/role/periodStartLabel"
+LBL_END   <- "http://www.xbrl.org/2003/role/periodEndLabel"
 
 fixture_roles <- function() {
     tibble::tribble(
@@ -97,7 +107,10 @@ fixture_elements <- function() {
         "us-gaap_LiabilitiesAndStockholdersEquityAbstract",      str,                          item,                   "duration",  "true",    NA,
         "us-gaap_Liabilities",                                   usd,                          item,                   "instant",   "false",   "credit",
         "us-gaap_StockholdersEquity",                            usd,                          item,                   "instant",   "false",   "credit",
-        "us-gaap_LiabilitiesAndStockholdersEquity",              usd,                          item,                   "instant",   "false",   "credit"
+        "us-gaap_LiabilitiesAndStockholdersEquity",              usd,                          item,                   "instant",   "false",   "credit",
+        "us-gaap_StatementOfCashFlowsAbstract",                  str,                          item,                   "duration",  "true",    NA,
+        "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",    usd,                          item,                   "duration",  "false",   "credit",
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  usd,                          item,                   "duration",  "false",   "debit"
     )
 }
 
@@ -129,7 +142,12 @@ fixture_presentation <- function() {
         ROLE_BS, "us-gaap_StatementOfFinancialPositionAbstract",     "us-gaap_LiabilitiesAndStockholdersEquityAbstract",      "2",    NA,
         ROLE_BS, "us-gaap_LiabilitiesAndStockholdersEquityAbstract", "us-gaap_Liabilities",                                   "1",    NA,
         ROLE_BS, "us-gaap_LiabilitiesAndStockholdersEquityAbstract", "us-gaap_StockholdersEquity",                            "2",    NA,
-        ROLE_BS, "us-gaap_LiabilitiesAndStockholdersEquityAbstract", "us-gaap_LiabilitiesAndStockholdersEquity",              "3",    LBL_TOT
+        ROLE_BS, "us-gaap_LiabilitiesAndStockholdersEquityAbstract", "us-gaap_LiabilitiesAndStockholdersEquity",              "3",    LBL_TOT,
+        ROLE_CF, "us-gaap_StatementOfCashFlowsAbstract",             "us-gaap_NetIncomeLoss",                                 "1",    NA,
+        ROLE_CF, "us-gaap_StatementOfCashFlowsAbstract",             "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",    "2",    LBL_NEG,
+        ROLE_CF, "us-gaap_StatementOfCashFlowsAbstract",             "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "3",    LBL_TOT,
+        ROLE_CF, "us-gaap_StatementOfCashFlowsAbstract",             "us-gaap_CashAndCashEquivalentsAtCarryingValue",         "4",    LBL_START,
+        ROLE_CF, "us-gaap_StatementOfCashFlowsAbstract",             "us-gaap_CashAndCashEquivalentsAtCarryingValue",         "5",    LBL_END
     ) |>
         dplyr::mutate(preferredLabel = as.character(preferredLabel))
 }
@@ -173,7 +191,14 @@ fixture_labels <- function() {
         "us-gaap_Liabilities",                                   LBL,        "Liabilities",
         "us-gaap_StockholdersEquity",                            LBL,        "Stockholders' Equity",
         "us-gaap_LiabilitiesAndStockholdersEquity",              LBL,        "Liabilities and Equity",
-        "us-gaap_LiabilitiesAndStockholdersEquity",              LBL_TOT,    "Total liabilities and equity"
+        "us-gaap_LiabilitiesAndStockholdersEquity",              LBL_TOT,    "Total liabilities and equity",
+        "us-gaap_StatementOfCashFlowsAbstract",                  LBL,        "Statement of Cash Flows [Abstract]",
+        "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",    LBL,        "Payments to Acquire Property, Plant and Equipment",
+        "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",    LBL_NEG,    "Capital expenditures",
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  LBL,        "Cash, Period Increase (Decrease)",
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  LBL_TOT,    "Net change in cash",
+        "us-gaap_CashAndCashEquivalentsAtCarryingValue",         LBL_START,  "Cash at beginning of period",
+        "us-gaap_CashAndCashEquivalentsAtCarryingValue",         LBL_END,    "Cash at end of period"
     ) |>
         dplyr::mutate(lang = "en-US", .after = elementId)
 }
@@ -190,6 +215,8 @@ fixture_contexts <- function() {
         "c_i_2026_09_30",     NA,           "2026-09-30", TRUE,
         "c_i_2025_12_31",     NA,           "2025-12-31", TRUE,
         "c_i_2024_12_31",     NA,           "2024-12-31", TRUE,
+        "c_i_2026_06_30",     NA,           "2026-06-30", TRUE,
+        "c_i_2025_09_30",     NA,           "2025-09-30", TRUE,
         # single-dimension member contexts
         "c_q3_2026_svc",      "2026-07-01", "2026-09-30", FALSE,
         "c_q3_2026_prd",      "2026-07-01", "2026-09-30", FALSE,
@@ -264,7 +291,15 @@ fixture_facts <- function() {
         "us-gaap_StockholdersEquity",                            "c_i_2026_09_30",    "usd",           "200000000",   "-6",
         "us-gaap_StockholdersEquity",                            "c_i_2025_12_31",    "usd",           "160000000",   "-6",
         "us-gaap_LiabilitiesAndStockholdersEquity",              "c_i_2026_09_30",    "usd",           "500000000",   "-6",
-        "us-gaap_LiabilitiesAndStockholdersEquity",              "c_i_2025_12_31",    "usd",           "400000000",   "-6"
+        "us-gaap_LiabilitiesAndStockholdersEquity",              "c_i_2025_12_31",    "usd",           "400000000",   "-6",
+        "us-gaap_NetIncomeLoss",                                 "c_ytd_2025",        "usd",           "1150000000", "-6",
+        "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",    "c_ytd_2026",        "usd",           "1250000000", "-6",
+        "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",    "c_ytd_2025",        "usd",           "1090000000", "-6",
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "c_ytd_2026",        "usd",           "50000000", "-6",
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "c_ytd_2025",        "usd",           "60000000", "-6",
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "c_q3_2025",         "usd",           "20000000", "-6",    # 3M: excluded from YTD
+        "us-gaap_CashAndCashEquivalentAtCarryingValue",          "c_i_2025_09_30",    "usd",           "180000000", "-6",
+        "us-gaap_CashAndCashEquivalentAtCarryingValue",          "c_i_2026_06_30",    "usd",           "180000000", "-6",   # Q3 start: not the YTD start
     )
 }
 

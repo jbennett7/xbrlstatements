@@ -63,7 +63,8 @@ flatten_tree <- function(tree) {
         row <- if (!is_struct)
             tibble(elementId = id, depth = depth,
                    negated   = grepl("negated", plabel %||na% ""),
-                   label     = label_for(tree, id, plabel))
+                   label     = label_for(tree, id, plabel),
+                   preferredLabel = plabel)
 
         kids <- tree$pres |> filter(fromElementId == id) |> arrange(order)
         child_depth <- if (is_struct) depth else depth + 1
