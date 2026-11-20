@@ -27,7 +27,7 @@ library(secfilings)
 library(XBRL)
 library(dplyr)
 
-useragent <- Sys.getenv("SEC_USERAGENT")   # Name email@domain.com", required by the SEC
+useragent <- Sys.getenv("SEC_USERAGENT")   # "Name email@domain.com", required by the SEC
 cik <- secfilings::get_cik('T', useragent)  # example get cik for AT&T
 filings <- secfilings::get_submissions(cik, useragent) |>
     dplyr::filter(
@@ -60,9 +60,9 @@ An example display
 
 | element | contents |
 |---|---|
-| `data` | one row per line item: `elementId`, `depth`, `label`, `negated`, `preferredLabel`, `period`, one numeric column per date, `is_member` |
+| `data` | one row per line item: `seq`, `elementId`, `depth`, `negated`, `label`, `preferredLabel`, one numeric column per date, `is_member` |
 | `tree` | the presentation tree for the statement's role |
-| `kind`, `period` | what was built |
+| `kind`, `period` | what was built; `period` is the period actually used (`3M` for a Q1 cash flow) |
 
 Values in `data` are **as filed**. `format_statement()` applies the
 `negatedLabel` sign flip, scales to millions (by default), and formats EPS to 2
@@ -96,6 +96,11 @@ The statement role is found by its title (for example "Statements of Income",
 
 - Members from contexts with more than one dimension are ignored.
 - Only the latest two periods are returned.
+- Signs follow the filer's `negatedLabel` roles. A line the filer labeled
+  incorrectly shows the wrong sign (e.g. AT&T's 2026 Q3 short-term debt
+  repayments); the calculation linkbase is not used to correct it.
+- The statement of stockholders' equity is not supported yet. `kind = "equity"`
+  does not work.
 
 ## Tests
 

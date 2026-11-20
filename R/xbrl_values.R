@@ -95,7 +95,7 @@ widen <- function(values, date_cols, id_cols = "elementId") {
 #'     column date.
 #' @param xbrl a parsed filing, as returned by [process_filing()] or
 #'     `XBRL::xbrlDoAll()`
-#' @param statement the statement
+#' @param statement `flatten_tree()` output
 #' @param values the duration consolidated_values output for the statement period
 #' @param date_cols column dates, from `latest_dates()`
 #' @return a tibble with elementId, preferredLabel and one column per date
@@ -133,7 +133,7 @@ balance_values <- function(xbrl, statement, values, date_cols) {
 #' @param xbrl a parsed filing, as returned by [process_filing()] or
 #'     `XBRL::xbrlDoAll()`
 #' @param tree `role_tree()` output
-#' @param statement the statement
+#' @param statement `flatten_tree()` output
 #' @param period one of `3M`, `YTD`, `FY` or `instant`
 #' @param date_cols column dates, from `latest_dates()`
 get_member_rows <- function(xbrl, tree, statement, period, date_cols) {
