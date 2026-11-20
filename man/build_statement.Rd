@@ -2,17 +2,32 @@
 % Please edit documentation in R/xbrl_statements.R
 \name{build_statement}
 \alias{build_statement}
-\title{build_statement}
+\title{Build a financial statement from a parsed XBRL filing}
 \usage{
 build_statement(xbrl, kind, form)
 }
 \arguments{
-\item{xbrl}{the data processed by xbrlDoAll}
+\item{xbrl}{a parsed filing, as returned by \verb{[process_filing()]} or
+\code{XBRL::xbrlDoAll()}}
 
-\item{kind}{the statement type}
+\item{kind}{one of \code{income}, \code{balance} or \code{cash_flow}}
 
-\item{form}{the form type}
+\item{form}{the form type, e.g. \code{10-Q} or \code{10-K}; it chooses the period}
+}
+\value{
+a list with \code{kind}, \code{period}, \code{tree} and \code{data}. \code{data} has one row
+per line item, with values as filed. \code{period} is the period actually
+used: \verb{3M}, \code{YTD}, \code{FY} or \code{instant}
 }
 \description{
-build_statement
+finds the statement's role by its title, walks the presentation
+tree, and fills it with consolidated facts and single-dimension member
+rows for the two most recent periods.
+}
+\details{
+\itemize{
+\item a Q1 10-Q falls back from \code{YTD} to \verb{3M}
+\item in duration statements, opening and closing balances are filled from
+instant facts
+}
 }

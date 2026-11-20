@@ -2,17 +2,23 @@
 % Please edit documentation in R/xbrl_values.R
 \name{format_statement}
 \alias{format_statement}
-\title{format_statement}
+\title{Format a statement for display}
 \usage{
 format_statement(data, tree, scale = 1e+06)
 }
 \arguments{
-\item{data}{the data}
+\item{data}{the data element of \verb{[build_statement()]}}
 
-\item{tree}{the tree}
+\item{tree}{the tree element of \verb{[build_statement()]}}
 
-\item{scale}{the scale}
+\item{scale}{divisor for dollar and share amounts; the default \code{1e6} shows
+millions}
+}
+\value{
+a tibble with \code{display_label} (indented by depth) and one character
+column per date. \code{negatedLabel} rows are sign-flipped, negatives are
+shown in parentheses, and per-share values have 2 decimals.
 }
 \description{
-format_statement
+Format a statement for display
 }

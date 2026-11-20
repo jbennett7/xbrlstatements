@@ -2,17 +2,23 @@
 % Please edit documentation in R/process_filing.R
 \name{process_filing}
 \alias{process_filing}
-\title{Process an SEC filing based on accession number}
+\title{Download and parse an SEC filing's XBRL}
 \usage{
-process_filing(cik, accession, useragent)
+process_filing(cik, accession, useragent, cache = "./.cache")
 }
 \arguments{
-\item{cik}{cik number of company}
+\item{cik}{the company CIK (padded or unpadded)}
 
-\item{accession}{accession number of the document}
+\item{accession}{the accession number in dashed format}
 
-\item{useragent}{useragent used to access EDGAR}
+\item{useragent}{required by SEC: "Name email@domain.com"}
+
+\item{cache}{cache directory; filings go in \verb{<cache>/filings}, XBRL schemas
+in \verb{<cache>/xbrl}}
+}
+\value{
+the parsed filing, a list of tables from \code{XBRL::xbrlDoAll()}
 }
 \description{
-Process an SEC filing based on accession number
+Download and parse an SEC filing's XBRL
 }

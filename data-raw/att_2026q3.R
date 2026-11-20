@@ -1,6 +1,9 @@
 library(dplyr)
 devtools::load_all('.')
-full <- process_filing("0000732717", "0000732717-26-000372", Sys.getenv("SEC_USERAGENT"))
+full <- process_filing("0000732717",
+                       "0000732717-26-000372",
+                       Sys.getenv("SEC_USERAGENT"),
+                       cache = "../Markets/.cache")
 
 roles <- vapply(c("income", "balance", "cash_flow"), \(k) find_role(full, k), character(1))
 

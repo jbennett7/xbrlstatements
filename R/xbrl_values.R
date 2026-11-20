@@ -190,12 +190,16 @@ merge_members <- function(statement, wide, member_rows) {
         mutate(seq = row_number())
 }
 
-#' format_statement
+#' Format a statement for display
 #'
 #' @export
-#' @param data the data
-#' @param tree the tree
-#' @param scale the scale
+#' @param data the data element of `[build_statement()]`
+#' @param tree the tree element of `[build_statement()]`
+#' @param scale divisor for dollar and share amounts; the default `1e6` shows
+#'     millions
+#' @return a tibble with `display_label` (indented by depth) and one character
+#'     column per date. `negatedLabel` rows are sign-flipped, negatives are
+#'     shown in parentheses, and per-share values have 2 decimals.
 format_statement <- function(data, tree, scale = 1e6) {
     date_cols <- grep("^\\d{4}-\\d{2}-\\d{2}$", names(data), value = TRUE)
     fmt_num <- function(x, digits) {

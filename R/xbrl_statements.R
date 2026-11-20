@@ -48,12 +48,24 @@ find_role <- function(xbrl, kind) {
     hits$roleId
 }
 
-#' build_statement
+#' Build a financial statement from a parsed XBRL filing
+#'
+#' @description finds the statement's role by its title, walks the presentation
+#'     tree, and fills it with consolidated facts and single-dimension member
+#'     rows for the two most recent periods.
 #'
 #' @export
-#' @param xbrl the data processed by xbrlDoAll
-#' @param kind the statement type
-#' @param form the form type
+#' @param xbrl a parsed filing, as returned by `[process_filing()]` or
+#'     `XBRL::xbrlDoAll()`
+#' @param kind one of `income`, `balance` or `cash_flow`
+#' @param form the form type, e.g. `10-Q` or `10-K`; it chooses the period
+#' @return a list with `kind`, `period`, `tree` and `data`. `data` has one row
+#'     per line item, with values as filed. `period` is the period actually
+#'     used: `3M`, `YTD`, `FY` or `instant`
+#' @details
+#'    - a Q1 10-Q falls back from `YTD` to `3M`
+#'    - in duration statements, opening and closing balances are filled from
+#'      instant facts
 build_statement <- function(xbrl, kind, form) {
     period <- period_for(kind, form)
     role_id <- find_role(xbrl, kind)
