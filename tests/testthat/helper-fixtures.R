@@ -297,7 +297,7 @@ fixture_facts <- function() {
         "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",    "c_ytd_2025",        "usd",           "1090000000", "-6",
         "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "c_ytd_2026",        "usd",           "50000000", "-6",
         "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "c_ytd_2025",        "usd",           "60000000", "-6",
-        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "c_q3_2025",         "usd",           "20000000", "-6",    # 3M: excluded from YTD
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease",  "c_q3_2026",         "usd",           "20000000", "-6",    # 3M: excluded from YTD
         "us-gaap_CashAndCashEquivalentsAtCarryingValue",         "c_i_2025_09_30",    "usd",           "180000000", "-6",
         "us-gaap_CashAndCashEquivalentsAtCarryingValue",         "c_i_2026_06_30",    "usd",           "180000000", "-6",   # Q3 start: not the YTD start
     )
@@ -313,6 +313,15 @@ make_xbrl <- function() {
         dimension    = fixture_dimensions(),
         fact         = fixture_facts()
     )
+}
+
+make_xbrl_q1 <- function() {
+    x <- make_xbrl()
+    ytd <- c("c_ytd_2026", "c_ytd_2025", "c_ytd_2026_svc")
+    x$context   <- x$context   |> dplyr::filter(!contextId %in% ytd)
+    x$fact      <- x$fact      |> dplyr::filter(!contextId %in% ytd)
+    x$dimension <- x$dimension |> dplyr::filter(!contextId %in% ytd)
+    x
 }
 
 dup_facts <- tibble::tribble(

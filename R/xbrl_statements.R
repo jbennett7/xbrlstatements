@@ -60,6 +60,11 @@ build_statement <- function(xbrl, kind, form) {
     tree <- role_tree(xbrl, role_id)
     statement <- flatten_tree(tree)
     values <- consolidated_values(xbrl, unique(statement$elementId), period)
+    # For Q1 filings YTD will return nothing, retry with 3M.
+    if (nrow(values) == 0 && period == "YTD") {
+        period <- "3M"
+        values <- consolidated_values(xbrl, unique(statement$elementId), period)
+    }
     date_cols <- latest_dates(values)
     wide <- widen(values, date_cols)
     member_rows <- get_member_rows(xbrl, tree, statement, period, date_cols)

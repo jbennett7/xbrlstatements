@@ -63,9 +63,10 @@ test_that("build_statement errors when the period has no facts", {
     expect_error(build_statement(make_xbrl(), "income", "10-K"), "No facts found")
 })
 
-test_that("build_statement has correct YTD period ends", {
+test_that("build_statement uses YTD and has correct YTD period ends", {
     bs <- build_statement(make_xbrl(), "cash_flow", "10-Q")
     date_cols <- names(bs$data)[grepl("\\d{4}-\\d{2}-\\d{2}", names(bs$data))]
+    expect_equal(bs$period, "YTD")
     expect_equal(date_cols, c("2026-09-30", "2025-09-30"))
 })
 
@@ -105,4 +106,31 @@ test_that("build_statement rows are formatted correctly", {
     f <- format_statement(bs$data, bs$tree)
     expect_equal(f$`2026-09-30`[f$display_label == "Capital expenditures"], "(1,250)")
     expect_equal(f$`2026-09-30`[f$display_label == "Cash at end of period"], "200")
+})
+
+test_that("build_statement falls back to using \"3M\" when examining Q1 filings", {
+    bs <- build_statement(make_xbrl_q1(), "cash_flow", "10-Q")
+    # 3M: excluded from YTD; the Q1 value in make_xbrl_q1()
+    expect_equal(bs$period, "3M")
+})
+
+test_that("build_statement date columns are correct when falling back (Q1 filings)", {
+    bs <- build_statement(make_xbrl_q1(), "cash_flow", "10-Q")
+    # Columns have the following dates "2026-09-30" and "2025-09-30"
+    expect_equal(names(bs$data)[grepl("\\d{4}-\\d{2}-\\d{2}", names(bs$data))],
+                 c("2026-09-30", "2025-09-30"))
+})
+
+test_that("build_statement uses the 3M duration fact when falling back (Q1 filings)", {
+    bs <- build_statement(make_xbrl_q1(), "cash_flow", "10-Q")
+    # Duration value of net change for 2026 = 20e6
+    expect_equal(bs$data$`2026-09-30`[
+        bs$data$elementId == "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease"], 20e6)
+})
+
+test_that("build_statement start row uses the quarter start when falling back (Q1 filings)", {
+    bs <- build_statement(make_xbrl_q1(), "cash_flow", "10-Q")
+    label <- "Cash at beginning of period"
+    # Beginning of period 2026 = 180e6
+    expect_equal(bs$data$`2026-09-30`[bs$data$label == label], 180e6)
 })
