@@ -7,7 +7,7 @@
 build_statement(xbrl, kind, form)
 }
 \arguments{
-\item{xbrl}{a parsed filing, as returned by \verb{[process_filing()]} or
+\item{xbrl}{a parsed filing, as returned by \code{\link[=process_filing]{process_filing()}} or
 \code{XBRL::xbrlDoAll()}}
 
 \item{kind}{one of \code{income}, \code{balance} or \code{cash_flow}}

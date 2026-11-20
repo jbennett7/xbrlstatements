@@ -10,9 +10,10 @@ STATEMENTS <- list(
         period  = c(K = "FY", Q = "YTD"))
 )
 
-#' statement_config
+#' Look up the role pattern and periods for a statement kind
 #'
-#' @param kind the statement type
+#' @noRd
+#' @param kind one of `income`, `balance` or `cash_flow`
 statement_config <- function(kind) {
     cfg <- STATEMENTS[[kind]]
     if (is.null(cfg))
@@ -21,19 +22,22 @@ statement_config <- function(kind) {
     cfg
 }
 
-#' period_for
+#' Choose the period for a statement kind and form
 #'
-#' @param kind the statement type
-#' @param form the form type
+#' @noRd
+#' @param kind one of `income`, `balance` or `cash_flow`
+#' @param form the form type, e.g. `10-Q` or `10-K`; it chooses the period
 period_for <- function(kind, form) {
     cfg <- statement_config(kind)
     cfg$period[[if (startsWith(form, "10-K")) "K" else "Q"]]
 }
 
-#' find_role(xbrl, kind)
+#' Find the single presentation role for a statement kind
 #'
-#' @param xbrl the data processed by xbrlDoAll
-#' @param kind the statement type
+#' @noRd
+#' @param xbrl a parsed filing, as returned by [process_filing()] or
+#'    `XBRL::xbrlDoAll()`
+#' @param kind one of `income`, `balance` or `cash_flow`
 find_role <- function(xbrl, kind) {
     cfg <- statement_config(kind)
     pattern <- cfg$pattern
@@ -55,7 +59,7 @@ find_role <- function(xbrl, kind) {
 #'     rows for the two most recent periods.
 #'
 #' @export
-#' @param xbrl a parsed filing, as returned by `[process_filing()]` or
+#' @param xbrl a parsed filing, as returned by [process_filing()] or
 #'     `XBRL::xbrlDoAll()`
 #' @param kind one of `income`, `balance` or `cash_flow`
 #' @param form the form type, e.g. `10-Q` or `10-K`; it chooses the period

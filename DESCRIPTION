@@ -1,6 +1,6 @@
 Package: xbrlstatements
 Title: Build Financial Statements from SEC XBRL Filings
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: 
     person("Joseph", "Bennett", , "jbennett@jbennettconsulting.com", role = c("aut", "cre"))
 Description: Builds income statements, balance sheets and cash flow
@@ -16,7 +16,7 @@ Imports:
     purrr,
     tibble,
     XBRL (>= 1.1.0),
-    secfilings (>= 1.0.1),
+    secfilings (>= 1.0.2),
     stats,
     utils
 Remotes:

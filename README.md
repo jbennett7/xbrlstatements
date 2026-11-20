@@ -38,7 +38,7 @@ filings <- secfilings::get_submissions(cik, useragent) |>
 accession <- filings$accessionNumber[1]   # pull the latest filing
 form <- filings$form[1]   # and the form type
 
-xbrl <- process_filing(cik, accession, useragent)
+xbrl <- process_filing(cik, accession, useragent, cache = "~/.cache/sec")
 
 is <- build_statement(xbrl, "income", form)
 format_statement(is$data, is$tree)
@@ -60,7 +60,7 @@ An example display
 
 | element | contents |
 |---|---|
-| `data` | one row per line item: `elementId`, `depth`, `label`, `negated`, one numeric column per date, `is_member` |
+| `data` | one row per line item: `elementId`, `depth`, `label`, `negated`, `preferredLabel`, `period`, one numeric column per date, `is_member` |
 | `tree` | the presentation tree for the statement's role |
 | `kind`, `period` | what was built |
 
@@ -74,7 +74,7 @@ decimals.
 |---|---|---|
 | `income` | 3 months | fiscal year |
 | `balance` | instant | instant |
-| `cash_flow` | year to date | fiscal year |
+| `cash_flow` | year to date (3 months in Q1) | fiscal year |
 
 The statement role is found by its title (for example "Statements of Income",
 "Operations" or "Earnings"); parenthetical roles are excluded.
@@ -88,11 +88,12 @@ The statement role is found by its title (for example "Statements of Income",
   Service / Equipment) become indented rows; a line with no consolidated value
   is replaced by its members.
 - **Dates:** the two dates with the most facts, newest first.
+- **Balances in duration statements:** opening and closing balances (e.g. cash
+  on the cash flow statement) come from instant facts: the start row uses the
+  day before the period starts, the end row uses the column date.
 
 ## Limitations
 
-- Cash flow beginning and ending cash balances (instant facts on a duration
-  statement) are not filled in yet. (Working).
 - Members from contexts with more than one dimension are ignored.
 - Only the latest two periods are returned.
 
@@ -103,4 +104,5 @@ devtools::test()
 ```
 
 Unit tests run against a small hand-built filing (`tests/testthat/helper-fixtures.R`);
-regression snapshots compare against a trimmed AT&T 10-Q.
+regression snapshots compare against a trimmed AT&T 10-Q. The script in
+`data-raw/att_2026q3.R` rebuilds the AT&T fixture.

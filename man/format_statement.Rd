@@ -7,9 +7,9 @@
 format_statement(data, tree, scale = 1e+06)
 }
 \arguments{
-\item{data}{the data element of \verb{[build_statement()]}}
+\item{data}{the data element of \code{\link[=build_statement]{build_statement()}}}
 
-\item{tree}{the tree element of \verb{[build_statement()]}}
+\item{tree}{the tree element of \code{\link[=build_statement]{build_statement()}}}
 
 \item{scale}{divisor for dollar and share amounts; the default \code{1e6} shows
 millions}

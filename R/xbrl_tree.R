@@ -3,10 +3,15 @@ LABEL_TERSE    <- "http://www.xbrl.org/2003/role/terseLabel"
 
 `%||na%` <- function(a, b) if (is.null(a) || is.na(a)) b else a
 
-#' role_tree
+#' Collect a role's presentation arcs, elements and labels
 #'
-#' @param xbrl the data processed by xbrlDoAll
-#' @param role_id the role id
+#' @noRd
+#' @param xbrl a parsed filing, as returned by [process_filing()] or
+#'    `XBRL::xbrlDoAll()`
+#' @param role_id the statement's role URI (e.g.
+#'    "http://att.com/role/ConsolidatedBalanceSheets"), as returned by
+#'    `find_role()`
+#' @return a list: `role_id`, `pres` (arcs), `elements`, `labels`, `root`
 role_tree <- function(xbrl, role_id) {
     if (length(role_id) != 1) stop("role_id must be a single value")
     pres <- xbrl$presentation |>
@@ -39,11 +44,16 @@ role_tree <- function(xbrl, role_id) {
     list(role_id = role_id, pres = pres, elements = elements, labels = labels, root = root)
 }
 
-#' label_for
+#' Pick an element's label, preferring the arc's label role
 #'
-#' @param tree the document tree
-#' @param elt the elt
-#' @param preferred_role the preferred role
+#' @noRd
+#' @param tree the tree element from `role_tree()`
+#' @param elt an element id, e.g. "us-gaap_NetIncomeLoss"
+#' @param preferred_role the label role URI from the presentation arc's
+#'    `preferredLabel` (e.g. a terseLabel or totalLabel URI); NULL or NA
+#'    means the standard label
+#' @details Tries the preferred role, then terseLabel, then the standard label;
+#'    returns `elt` if none exist. A trailing `[Abstract]`-style suffix is removed.
 label_for <- function(tree, elt, preferred_role = NULL) {
     roles <- unique(c(preferred_role %||na% LABEL_STANDARD, LABEL_TERSE, LABEL_STANDARD))
     cand <- tree$labels |> filter(elementId == elt)
@@ -54,9 +64,10 @@ label_for <- function(tree, elt, preferred_role = NULL) {
     sub("\\s*\\[[A-Za-z ]+\\]$", "", cand$labelString[hit[1]])
 }
 
-#' flatten_tree
+#' Walk the tree depth-first into one row per display line
 #'
-#' @param tree the tree
+#' @noRd
+#' @param tree the tree element from `role_tree()`
 flatten_tree <- function(tree) {
     walk <- function(id, depth, plabel) {
         is_struct <- isTRUE(tree$elements$structural[match(id, tree$elements$elementId)])
@@ -79,25 +90,30 @@ flatten_tree <- function(tree) {
         mutate(seq = row_number(), .before = 1)
 }
 
-#' descendants
+#' All elements below a node
 #'
-#' @param tree the tree
-#' @param id the id
+#' @noRd
+#' @param tree the tree element from `role_tree()`
+#' @param id the element id of the node whose descendants are returned
 descendants <- function(tree, id) {
     kids <- tree$pres$toElementId[tree$pres$fromElementId == id]
     c(kids, unlist(lapply(kids, \(k) descendants(tree, k))))
 }
 
-#' tree_members
+#' All members below the given axes
 #'
-#' @param tree the tree
-#' @param axes the axes
+#' @noRd
+#' @param tree the tree element from `role_tree()`
+#' @param axes element ids of the axis nodes in the tree (elements whose
+#'    substitutionGroup is xbrldt:dimensionItem), e.g. "srt_ProductOrServiceAxis"
 tree_members <- function(tree, axes)
     unique(unlist(lapply(axes, descendants, tree = tree)))
 
-#' fact_status
+#' Mark each element as consolidated (`*`) or dimensional-only (`d`)
 #'
-#' @param xbrl the data processed by xbrlDoAll
+#' @noRd
+#' @param xbrl a parsed filing, as returned by [process_filing()] or
+#'    `XBRL::xbrlDoAll()`
 fact_status <- function(xbrl) {
     all_ids    <- unique(xbrl$fact$elementId)
     consol_ids <- xbrl$fact |>
@@ -108,13 +124,15 @@ fact_status <- function(xbrl) {
     status
 }
 
-#' print_tree
+#' Print the presentation tree (for debugging)
 #'
-#' @param tree the tree
-#' @param facts the facts
-#' @param id the id
-#' @param depth the depth
-#' @param plabel the plabel
+#' @noRd
+#' @param tree the tree element from `role_tree()`
+#' @param facts optional `fact_status()` output, for marking each line
+#' @param id the element id to start from (default: the tree's root)
+#' @param depth current indentation depth (used by the recursion)
+#' @param plabel preferredLabel of the arc leading to `id`, shown after it
+#'    (used by the recursion)
 print_tree <- function(tree, facts = NULL, id = tree$root, depth = 0, plabel = NA) {
     el   <- tree$elements[match(id, tree$elements$elementId),]
     tag  <- if (isTRUE(el$structural)) "[S]"

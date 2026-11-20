@@ -4,8 +4,9 @@ check_period <- function(period) {
     }
 }
 
-#' span_of
+#' Classify a duration as `3M`, `YTD` or `FY`
 #'
+#' @noRd
 #' @param start the start date
 #' @param end the end date
 span_of <- function(start, end) {
@@ -18,10 +19,12 @@ span_of <- function(start, end) {
     )
 }
 
-#' best_facts
+#' Keep the most precise fact per key
 #'
-#' @param facts the facts
-#' @param keys the keys
+#' @noRd
+#' @param facts facts joined to their contexts, with `fact` and `decimals`
+#'     columns
+#' @param keys columns that identify one fact
 best_facts <- function(facts, keys=c("elementId", "startDate", "endDate")) {
     facts |>
         distinct(across(all_of(c(keys, "fact", "decimals")))) |>
@@ -34,11 +37,13 @@ best_facts <- function(facts, keys=c("elementId", "startDate", "endDate")) {
         select(-decimals, -precision)
 }
 
-#' consolidated_values
+#' Facts without dimensions for the given elements and period
 #'
-#' @param xbrl the data processed by xbrlDoAll
-#' @param elt_ids the elt_ids
-#' @param period the period
+#' @noRd
+#' @param xbrl a parsed filing, as returned by [process_filing()] or
+#'     `XBRL::xbrlDoAll()`
+#' @param elt_ids element ids to keep
+#' @param period one of `3M`, `YTD`, `FY` or `instant`
 consolidated_values <- function(xbrl, elt_ids, period) {
     check_period(period)
     is_instant <- period == "instant"
@@ -51,10 +56,11 @@ consolidated_values <- function(xbrl, elt_ids, period) {
         best_facts()
 }
 
-#' latest_dates
+#' The `n` dates with the most facts, newest first
 #'
-#' @param values the values
-#' @param n the n
+#' @noRd
+#' @param values `consolidated_values()` output
+#' @param n number of dates to keep
 latest_dates <- function(values, n = 2) {
     if (nrow(values) == 0) stop("No facts found for the requested period")
     values |>
@@ -65,11 +71,12 @@ latest_dates <- function(values, n = 2) {
         pull(endDate)
 }
 
-#' widen
+#' Pivot facts to one column per date
 #'
-#' @param values the values
-#' @param date_cols the date_cols
-#' @param id_cols the id_cols
+#' @noRd
+#' @param values `consolidated_values()` output
+#' @param date_cols column dates, from `latest_dates()`
+#' @param id_cols columns that identify a row
 widen <- function(values, date_cols, id_cols = "elementId") {
     values |>
         filter(endDate %in% date_cols) |>
@@ -80,15 +87,17 @@ widen <- function(values, date_cols, id_cols = "elementId") {
         select(all_of(c(id_cols, date_cols)))
 }
 
-#' balance_values
+#' Opening and closing balances for a duration statement
 #'
+#' @noRd
 #' @details Start rows (periodStartLabel) take the instant the day before the
 #'     column's period starts; all other instant rows take the instant at the
 #'     column date.
-#' @param xbrl the data processed by xbrlDoAll
+#' @param xbrl a parsed filing, as returned by [process_filing()] or
+#'     `XBRL::xbrlDoAll()`
 #' @param statement the statement
 #' @param values the duration consolidated_values output for the statement period
-#' @param date_cols the date_cols
+#' @param date_cols column dates, from `latest_dates()`
 #' @return a tibble with elementId, preferredLabel and one column per date
 balance_values <- function(xbrl, statement, values, date_cols) {
     instant_ids <- xbrl$element$elementId[xbrl$element$periodType == "instant"]
@@ -118,13 +127,15 @@ balance_values <- function(xbrl, statement, values, date_cols) {
         widen(date_cols, id_cols = c("elementId", "preferredLabel"))
 }
 
-#' get_member_rows
+#' Single-dimension member rows for the statement's axes
 #'
-#' @param xbrl the data processed by xbrlDoAll
-#' @param tree the tree
+#' @noRd
+#' @param xbrl a parsed filing, as returned by [process_filing()] or
+#'     `XBRL::xbrlDoAll()`
+#' @param tree `role_tree()` output
 #' @param statement the statement
-#' @param period the period
-#' @param date_cols the date_cols
+#' @param period one of `3M`, `YTD`, `FY` or `instant`
+#' @param date_cols column dates, from `latest_dates()`
 get_member_rows <- function(xbrl, tree, statement, period, date_cols) {
     check_period(period)
     is_instant <- period == "instant"
@@ -166,11 +177,12 @@ get_member_rows <- function(xbrl, tree, statement, period, date_cols) {
         select(seq, elementId, depth, negated, label, all_of(date_cols), is_member)
 }
 
-#' merge_members
+#' Combine line items and member rows; replace empty lines with their members
 #'
-#' @param statement the statement
-#' @param wide the wide
-#' @param member_rows the member_rows
+#' @noRd
+#' @param statement `flatten_tree()` output
+#' @param wide `widen()` output for the line items
+#' @param member_rows `get_member_rows()` output
 merge_members <- function(statement, wide, member_rows) {
     has_members <- unique(member_rows$elementId)
     date_cols <- setdiff(names(wide), "elementId")
@@ -193,8 +205,8 @@ merge_members <- function(statement, wide, member_rows) {
 #' Format a statement for display
 #'
 #' @export
-#' @param data the data element of `[build_statement()]`
-#' @param tree the tree element of `[build_statement()]`
+#' @param data the data element of [build_statement()]
+#' @param tree the tree element of [build_statement()]
 #' @param scale divisor for dollar and share amounts; the default `1e6` shows
 #'     millions
 #' @return a tibble with `display_label` (indented by depth) and one character
