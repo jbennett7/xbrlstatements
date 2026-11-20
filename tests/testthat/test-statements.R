@@ -134,3 +134,42 @@ test_that("build_statement start row uses the quarter start when falling back (Q
     # Beginning of period 2026 = 180e6
     expect_equal(bs$data$`2026-09-30`[bs$data$label == label], 180e6)
 })
+
+test_that("build_statement for 10-K filings, the period and date columns are correct", {
+    bs <- build_statement(make_xbrl_fy(), "cash_flow", "10-K")
+    expect_equal(bs$period, "FY")
+    expect_equal(names(bs$data)[grepl("\\d{4}-\\d{2}-\\d{2}", names(bs$data))],
+                 c("2025-12-31", "2024-12-31"))
+})
+
+test_that("build_statement uses FY duration fact for 10-K filings", {
+    bs <- build_statement(make_xbrl_fy(), "cash_flow", "10-K")
+    id <- "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease"
+    expect_equal(bs$data$`2025-12-31`[bs$data$elementId == id], 30e6)
+    expect_equal(bs$data$`2024-12-31`[bs$data$elementId == id], 20e6)
+})
+
+test_that("build_statement start row uses the prior year-end balances", {
+    bs <- build_statement(make_xbrl_fy(), "cash_flow", "10-K")
+    label <- "Cash at beginning of period"
+    expect_equal(bs$data$`2025-12-31`[bs$data$label == label], 120e6)
+    expect_equal(bs$data$`2024-12-31`[bs$data$label == label], 100e6)
+})
+
+test_that("build_statement end row", {
+    bs <- build_statement(make_xbrl_fy(), "cash_flow", "10-K")
+    label <- "Cash at end of period"
+    expect_equal(bs$data$`2025-12-31`[bs$data$label == label], 150e6)
+    expect_equal(bs$data$`2024-12-31`[bs$data$label == label], 120e6)
+})
+
+test_that("build_statement reconciliation", {
+    bs   <- build_statement(make_xbrl_fy(), "cash_flow", "10-K")$data
+    cols <- c("2025-12-31", "2024-12-31")
+    start <- as.numeric(bs[which(bs$preferredLabel == LBL_START), cols])
+    end   <- as.numeric(bs[which(bs$preferredLabel == LBL_END), cols])
+    delta <- as.numeric(bs[which(bs$elementId ==
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease"), cols])
+    expect_equal(end, c(150e6, 120e6))
+    expect_equal(start + delta, end)
+})

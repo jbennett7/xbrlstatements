@@ -36,12 +36,26 @@
 #   Cash at beginning of period (periodStartLabel)  150   120
 #   Cash at end of period (periodEndLabel)          200   180
 #
+# Cash flow statement (FY, in $M; make_xbrl_fy() only)      2025-12-31   2024-12-31
+#   Net income                                                   1,700        1,500
+#   Capital expenditures (negated)                              (1,670)      (1,480)
+#   Net change in cash                                              30           20
+#   Cash at beginning of period                                    120          100
+#   Cash at end of period                                          150          120
+#
 # Traps built in:
 #   - YTD facts (and a YTD member fact) that must not appear in a 3M statement
 #   - a two-dimension context on Revenues that must be ignored
 #   - EPS filed twice (decimals 2 and 0): the precise 4.5 must win over 5
 #   - shares filed twice (INF and -6): the INF value must win
 #   - a parenthetical role and a Disclosure role whose descriptions resemble statements
+#   - cash flow: a 3M net-chage fact (2026-09-30) that must not appear in a YTD
+#     statement; make_xbrl_q1() drops the YTD contexts so it becomes the Q1 value
+#   - cash flow: a 2026-06-30 cash instant (Q3 start) that the YTD start row must
+#     not use (it must use 2025-12-31); in make_xbrl_q1() it is the right answer
+#   - make_xbrl_fy(): a Q4 3M net-change fact that must not appear in an FY statement
+#   - make_xbrl_fy(): the FY start row must use the prior year end (2024-12-31 = 120),
+#     not the Q4 start (2025-09-30 = 180)
 
 ROLE_IS <- "http://acme.com/role/IncomeStatement"
 ROLE_BS <- "http://acme.com/role/BalanceSheet"
@@ -321,6 +335,27 @@ make_xbrl_q1 <- function() {
     x$context   <- x$context   |> dplyr::filter(!contextId %in% ytd)
     x$fact      <- x$fact      |> dplyr::filter(!contextId %in% ytd)
     x$dimension <- x$dimension |> dplyr::filter(!contextId %in% ytd)
+    x
+}
+
+make_xbrl_fy <- function() {
+    x <- make_xbrl()
+    x$context <- dplyr::bind_rows(x$context, tibble::tribble(
+        ~contextId,       ~startDate,   ~endDate,     ~instant,
+        "c_fy_2025",      "2025-01-01", "2025-12-31", FALSE,
+        "c_fy_2024",      "2024-01-01", "2024-12-31", FALSE,
+        "c_q4_2025",      "2025-10-01", "2025-12-31", FALSE,
+        "c_i_2023_12_31", NA,           "2023-12-31", TRUE))
+    x$fact <- dplyr::bind_rows(x$fact, tibble::tribble(
+        ~elementId,                                             ~contextId,       ~unitId, ~fact,        ~decimals,
+        "us-gaap_NetIncomeLoss",                                "c_fy_2025",      "usd",   "1700000000", "-6",
+        "us-gaap_NetIncomeLoss",                                "c_fy_2024",      "usd",   "1500000000", "-6",
+        "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",   "c_fy_2025",      "usd",   "1670000000", "-6",
+        "us-gaap_PaymentsToAcquirePropertyPlantAndEquipment",   "c_fy_2024",      "usd",   "1480000000", "-6",
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease", "c_fy_2025",      "usd",   "30000000",   "-6",
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease", "c_fy_2024",      "usd",   "20000000",   "-6",
+        "us-gaap_CashAndCashEquivalentsPeriodIncreaseDecrease", "c_q4_2025",      "usd",   "10000000",   "-6",  # Q4 3M: excluded from FY
+        "us-gaap_CashAndCashEquivalentsAtCarryingValue",        "c_i_2023_12_31", "usd",   "100000000",  "-6"))
     x
 }
 
